@@ -239,6 +239,7 @@ final class NivorquillController extends ChangeNotifier {
     }
     if (!allowed && !_disposed) {
       _emit(NivorquillEventKind.blocked, uri: uri);
+      settings.onNavigationBlocked?.call(uri);
     }
     return allowed && !_disposed;
   }

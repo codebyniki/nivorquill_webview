@@ -6,6 +6,30 @@ import 'dart:async';
 import 'fake_engine.dart';
 
 void main() {
+  testWidgets('HTTP-specific builder receives HTTP failures', (tester) async {
+    final engine = FakeEngine()..initialization = Completer<void>();
+    final controller = NivorquillController.withEngine(engine);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: NivorquillView(
+            controller: controller,
+            httpErrorBuilder: (_, error) => Text('Custom ${error.code}'),
+            errorBuilder: (_, _) => const Text('Generic error'),
+          ),
+        ),
+      ),
+    );
+    engine.initialization!.completeError(
+      const NivorquillFailure('http:500', 'Server error'),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Custom http:500'), findsOneWidget);
+    expect(find.text('Generic error'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
   testWidgets('view initialization does not notify listeners during build', (
     tester,
   ) async {

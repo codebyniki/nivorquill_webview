@@ -2,19 +2,31 @@
 
 ## Subsequent checks
 
+The included Android integration smoke test passed on an API 37 emulator. It
+covers local HTML, JavaScript, Promise evaluation, CSS, text search, blocked
+navigation and disposal. It does not cover HTTP error rendering, permissions,
+uploads, cookies or downloads.
+
+The generated example also compiled for the iOS simulator with Xcode 26.6.
+
 The expanded package passed `flutter analyze` and 27 Flutter tests on the
 installed Flutter 3.44.8 SDK. The test app built and launched on an Android
 API 37 emulator; that run exposed a build-phase notification assertion, which
 was fixed and covered by a widget regression test. A subsequent launch did
 not reproduce the assertion. The new callbacks, permissions, authentication,
 cookies and dialog behavior have not been validated end-to-end on devices;
-iOS compilation and device checks remain outstanding.
+iOS runtime checks remain outstanding.
 
 This is a **development source release**, not a production certification or a
 verified fix for the user's app. The host project and exact iOS error were not
 available. No app was migrated or published.
 
-## Completed here
+## Original validation (historical)
+
+The records below describe the original development environment and are kept
+for context. The subsequent checks above supersede their test and build status.
+
+### Completed here
 
 | Check | Result |
 | --- | --- |
@@ -34,7 +46,7 @@ DOM operations use test doubles; this is not a WKWebView/browser device test.
 The WASM formatter validates syntax; it does **not** resolve imports, type-check
 Flutter APIs, or replace `flutter analyze` and `flutter test`.
 
-## Blocked or not run
+### Blocked or not run at that time
 
 - The environment initially lacked Flutter. A local Flutter/Dart SDK download
   succeeded, but Dart VM startup for tooling aborted with

@@ -16,6 +16,21 @@ void main() {
   });
   tearDown(() => controller.dispose());
 
+  test('blocked navigation invokes the app callback', () async {
+    controller.dispose();
+    final blocked = <Uri>[];
+    controller = NivorquillController.withEngine(
+      engine,
+      settings: NivorquillSettings(onNavigationBlocked: blocked.add),
+    );
+    await controller.initialize();
+    expect(
+      await engine.callbacks.navigate('mailto:help@example.com', true),
+      isFalse,
+    );
+    expect(blocked, [Uri.parse('mailto:help@example.com')]);
+  });
+
   test(
     'HTTP error overlay is opt-in and ignores errors for other URLs',
     () async {

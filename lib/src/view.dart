@@ -20,6 +20,7 @@ class NivorquillView extends StatefulWidget {
     this.progressHeight = 4,
     this.loadingBuilder,
     this.errorBuilder,
+    this.httpErrorBuilder,
     this.gestureRecognizers = const <Factory<OneSequenceGestureRecognizer>>{},
   }) : assert(progressHeight > 0);
 
@@ -43,6 +44,9 @@ class NivorquillView extends StatefulWidget {
 
   /// Builds an overlay when initialization or page loading fails.
   final Widget Function(BuildContext, Object)? errorBuilder;
+
+  /// Builds a custom overlay for an HTTP failure before [errorBuilder] is used.
+  final Widget Function(BuildContext, NivorquillFailure)? httpErrorBuilder;
 
   /// Gesture recognizers forwarded to the embedded native view.
   final Set<Factory<OneSequenceGestureRecognizer>> gestureRecognizers;
@@ -68,12 +72,17 @@ class _NivorquillViewState extends State<NivorquillView> {
     }
   }
 
-  Widget _error(BuildContext context, Object error) =>
-      widget.errorBuilder?.call(context, error) ??
-      const ColoredBox(
-        color: Colors.white,
-        child: Center(child: Text('Unable to load this page.')),
-      );
+  Widget _error(BuildContext context, Object error) {
+    if (error is NivorquillFailure && error.code.startsWith('http:')) {
+      final builder = widget.httpErrorBuilder;
+      if (builder != null) return builder(context, error);
+    }
+    return widget.errorBuilder?.call(context, error) ??
+        const ColoredBox(
+          color: Colors.white,
+          child: Center(child: Text('Unable to load this page.')),
+        );
+  }
 
   @override
   Widget build(BuildContext context) => FutureBuilder<void>(

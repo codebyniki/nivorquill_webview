@@ -165,6 +165,7 @@ final class NivorquillSettings {
     this.verticalScrollBarEnabled,
     this.horizontalScrollBarEnabled,
     this.onHttpError,
+    this.onNavigationBlocked,
     this.showHttpErrorPage = false,
     this.httpErrorStatusCodes,
     this.onConsoleMessage,
@@ -219,6 +220,11 @@ final class NivorquillSettings {
 
   /// Receives HTTP errors, including possible subresource errors.
   final void Function(HttpResponseError)? onHttpError;
+
+  /// Receives a denied URL so the app can decide how to handle it.
+  ///
+  /// This callback does not launch external applications automatically.
+  final void Function(Uri)? onNavigationBlocked;
 
   /// Whether qualifying HTTP errors show the view’s error overlay.
   ///

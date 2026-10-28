@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'controller.dart';
+import 'models.dart';
+import 'view.dart';
 
 /// Optional back, forward and reload controls for a controller.
 class NivorquillNavigationBar extends StatelessWidget {
@@ -95,4 +97,56 @@ class NivorquillErrorPanel extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Displays trusted application-provided HTML in a separate error WebView.
+///
+/// Use as an HTTP error overlay. The HTML is trusted app content and its
+/// initial document bypasses navigation origin rules. JavaScript is disabled.
+class NivorquillHtmlErrorPage extends StatefulWidget {
+  /// Creates an error page from trusted [html].
+  const NivorquillHtmlErrorPage({super.key, required this.html});
+
+  /// Trusted HTML to display; a new value reloads the error document.
+  final String html;
+
+  @override
+  State<NivorquillHtmlErrorPage> createState() =>
+      _NivorquillHtmlErrorPageState();
+}
+
+class _NivorquillHtmlErrorPageState extends State<NivorquillHtmlErrorPage> {
+  late final NivorquillController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = NivorquillController(
+      settings: NivorquillSettings(javaScriptEnabled: false),
+    );
+    Future<void>.microtask(_load);
+  }
+
+  @override
+  void didUpdateWidget(covariant NivorquillHtmlErrorPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.html != widget.html) {
+      Future<void>.microtask(_load);
+    }
+  }
+
+  Future<void> _load() async {
+    try {
+      await _controller.loadHtml(widget.html);
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => NivorquillView(controller: _controller);
 }

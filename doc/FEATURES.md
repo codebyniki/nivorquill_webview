@@ -12,7 +12,7 @@ behavior should be tested on the OS and WebView versions your app supports.
 | JSON and Promise JavaScript | Android, iOS | Requires scripting enabled and JSON-serializable results. |
 | CSS, text find, metadata and scrolling | Android, iOS | CSS can be blocked by CSP; text find depends on `window.find`. |
 | Background color, zoom, scrollbars and overlays | Android, iOS | Native rendering and gesture behavior can differ by platform. |
-| HTTP errors, auth, dialogs and permissions | Optional callbacks | HTTP errors can include subresources; permissions require OS setup and app trust decisions. |
+| HTTP errors, auth, dialogs and permissions | Optional callbacks | HTTP errors can include subresources; custom HTTP overlays support trusted HTML. Permissions require OS setup and app trust decisions. |
 | Console and scroll events | Optional callbacks | Console output may contain sensitive data; logging is opt-in. |
 | Cookies | Shared native store | Clearing cookies affects other WebViews; platform URL requirements differ. |
 | Navigation and error UI, retry | Optional widgets and controller method | Retry issues a new GET; local HTML is reloaded separately. |

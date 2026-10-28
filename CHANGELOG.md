@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added HTTP-specific error builders and a widget for trusted HTML error pages.
+- Added a callback for blocked navigation so apps can handle external links.
+
 - Added a developer API guide and public API documentation for IDE hovers and generated references.
 
 - Added an opt-in error overlay for HTTP 5xx responses with configurable status selection.

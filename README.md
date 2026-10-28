@@ -149,8 +149,9 @@ subscription when the consumer is disposed. Events are not replayed.
 
 Navigation guards may run more than once for a navigation; keep them idempotent.
 Custom schemes such as `mailto:`, `tel:` and `intent:` are blocked. If you want
-external launches, handle the `blocked` event with an app-specific allowlist
-and the appropriate launcher. No external app is launched implicitly.
+external launches, handle `onNavigationBlocked` or the `blocked` event with an
+app-specific allowlist and the appropriate launcher. No external app is
+launched implicitly.
 
 ## Run the example
 
@@ -270,6 +271,14 @@ final controller = NivorquillController(
 
 NivorquillView(
   controller: controller,
+  httpErrorBuilder: (context, error) => NivorquillHtmlErrorPage(
+    html: '''
+      <!doctype html><html><body>
+        <h1>We'll be back soon</h1>
+        <p>Our server is temporarily unavailable.</p>
+      </body></html>
+    ''',
+  ),
   errorBuilder: (context, error) => NivorquillErrorPanel(
     message: 'The page is temporarily unavailable.',
     onRetry: () async {
@@ -282,6 +291,11 @@ NivorquillView(
   ),
 );
 ```
+
+`httpErrorBuilder` receives an HTTP failure and takes precedence over the
+general `errorBuilder`. `NivorquillHtmlErrorPage` displays trusted app-supplied
+HTML in a separate WebView with JavaScript disabled; you can instead return any
+Flutter widget. HTML should be supplied by the app, not untrusted page content.
 
 This is a best-effort overlay, not response interception. The platform callback
 can arrive after rendering starts, so the server page may briefly appear. A
