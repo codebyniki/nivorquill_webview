@@ -1,0 +1,13 @@
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+coverage/
+pubspec.lock
+example/android/
+example/ios/
+example/.metadata
+example/*.iml
+*.iml
+.idea/
+.DS_Store
+
