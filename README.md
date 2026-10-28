@@ -3,12 +3,12 @@
 **A Flutter WebView package for applications that need clear navigation rules,
 observable state and useful page tools.**
 
-`nivorquill_webview` · **0.1.0-dev.1** · intended targets: **iOS and Android**
+`nivorquill_webview` · **0.1.0** · intended targets: **iOS and Android**
 
-This development package is built on Flutter's `webview_flutter`.
+This package is built on Flutter's `webview_flutter`.
 It provides its own application API while delegating WKWebView / Android WebView
 maintenance to Flutter's native plugins. See [validation](doc/VALIDATION.md)
-before adopting it. Native compilation and device behavior remain unverified.
+for the checks completed and platform-specific limitations.
 
 For a complete guide to controllers, settings, callbacks and widgets, see the
 [API guide](doc/API.md).
@@ -40,9 +40,16 @@ For a complete guide to controllers, settings, callbacks and widgets, see the
 - macOS is possible through the upstream engine, but is not a supported target
   of this initial package. Web, Windows and Linux are not implemented.
 
-## Install locally
+## Installation
 
-Extract this folder beside your application, then add:
+Once version 0.1.0 is published on pub.dev, add it to your app:
+
+```yaml
+dependencies:
+  nivorquill_webview: ^0.1.0
+```
+
+For local development, place the package beside your application and use:
 
 ```yaml
 dependencies:
@@ -50,8 +57,8 @@ dependencies:
     path: ../nivorquill_webview
 ```
 
-Run `flutter pub get`. No package has been published or name reserved on pub.dev.
-`publish_to: none` intentionally prevents accidental publishing during validation.
+Run `flutter pub get` in your application. Local path dependencies are useful
+for development but should not be used in published packages.
 
 ## Minimal use
 
@@ -174,7 +181,7 @@ are covered in [the iOS guide](doc/IOS_MIGRATION.md).
 
 ## Deliberate limits
 
-This development release focuses on composition and application-level lifecycle handling. No managed downloads, PDF/screenshot export, headless WebViews, full
+This release focuses on composition and application-level lifecycle handling. No managed downloads, PDF/screenshot export, headless WebViews, full
 request interception, content blockers, popup/tab management, incognito data
 stores, document-start scripts, service worker interception, or privileged
 JS-to-Dart RPC are implemented. File selection, media permissions, dialogs and

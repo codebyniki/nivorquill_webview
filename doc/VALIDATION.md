@@ -1,86 +1,41 @@
-# Validation record — 28 October 2026
+# Validation record
 
-## Subsequent checks
-
-The included Android integration smoke test passed on an API 37 emulator. It
-covers local HTML, JavaScript, Promise evaluation, CSS, text search, blocked
-navigation and disposal. It does not cover HTTP error rendering, permissions,
-uploads, cookies or downloads.
-
-The generated example also compiled for the iOS simulator with Xcode 26.6.
-
-The expanded package passed `flutter analyze` and 27 Flutter tests on the
-installed Flutter 3.44.8 SDK. The test app built and launched on an Android
-API 37 emulator; that run exposed a build-phase notification assertion, which
-was fixed and covered by a widget regression test. A subsequent launch did
-not reproduce the assertion. The new callbacks, permissions, authentication,
-cookies and dialog behavior have not been validated end-to-end on devices;
-iOS runtime checks remain outstanding.
-
-This is a **development source release**, not a production certification or a
-verified fix for the user's app. The host project and exact iOS error were not
-available. No app was migrated or published.
-
-## Original validation (historical)
-
-The records below describe the original development environment and are kept
-for context. The subsequent checks above supersede their test and build status.
-
-### Completed here
+## 0.1.0 release preparation — 29 October 2026
 
 | Check | Result |
 | --- | --- |
-| Dart syntax parse and formatting | 13 Dart files accepted by @wasm-fmt/dart_fmt 0.4.0 |
-| Embedded JS template tests | 10 passed using Node's test runner and VM |
-| Package/example/analyzer YAML | Parsed successfully |
-| CI workflow YAML | Parsed successfully; no remote execution |
-| Upstream API inspection | Compared adapter calls with downloaded webview_flutter 4.14.1 source |
-| Name check | No exact indexed match found; pub.dev package API returned HTTP 404 |
+| Flutter / Dart | Flutter 3.44.8 and Dart 3.12.2 |
+| Formatting and analysis | `dart format --output=none --set-exit-if-changed` and `flutter analyze` passed |
+| Flutter tests | 31 tests passed |
+| JavaScript templates | 10 Node smoke tests passed |
+| Android | Example built and integration smoke test passed on an Android API 37 emulator |
+| iOS | Example built for the simulator and integration smoke test passed on an iPhone 17 Pro simulator with iOS 26.5 |
+| Package archive | A clean temporary copy passed `dart pub publish --dry-run` with zero warnings. Repeat from the committed release before publishing. |
+| Package name | The pub.dev package API returned HTTP 404 during preparation; this does not reserve the name. |
 
-JS tests execute the actual string templates extracted from scripts.dart, with
-JSON-encoded substitutions. They cover JSON values, exceptions, cyclic/BigInt
-results, Promise success/rejection, late settlement after cleanup, CSS insertion
-and escaping, ID collisions, and text-search arguments/unsupported engines.
-DOM operations use test doubles; this is not a WKWebView/browser device test.
+The device smoke test covers local HTML, synchronous and asynchronous
+JavaScript, CSS injection, text search, blocked navigation and disposal. It
+is not a comprehensive platform certification. In particular, HTTP error
+presentation, uploads, cookies, permissions, authentication, redirects,
+background/foreground transitions and same-URL navigation races need further
+end-to-end testing. Behavior varies by operating system and WebView version.
 
-The WASM formatter validates syntax; it does **not** resolve imports, type-check
-Flutter APIs, or replace `flutter analyze` and `flutter test`.
+The declared Flutter 3.41 minimum has not been tested in this environment.
+The CI workflow includes it in its test matrix, but a remote CI run has not been
+verified here. Test your app's dependency set, OS versions and required
+features before production adoption.
 
-### Blocked or not run at that time
+## Release checklist
 
-- The environment initially lacked Flutter. A local Flutter/Dart SDK download
-  succeeded, but Dart VM startup for tooling aborted with
-  `Failed to retrieve stack bounds`. Flutter bootstrap and Dart CLI formatting
-  could not complete. No Flutter analyzer or unit-test pass is claimed.
-- **21 Flutter unit tests are included but not executed**. They cover policies,
-  guard failure/timeout, stale guard results, concurrent initialization, local
-  HTML navigation, load supersession, errors/timeouts, script invalidation,
-  JSON decoding, async cleanup, history and disposal.
-- One real-device integration test is included but not executed.
-- iOS compilation, Android compilation, simulator/device behavior, minimum SDK
-  compatibility and CI have not been verified. Xcode is unavailable here.
-- Actual application-specific auth, uploads, payments, cookies, permissions,
-  accessibility and lifecycle behavior remain integration work.
+1. Review the release changes and confirm that the repository and issue links
+   in `pubspec.yaml` are correct.
+2. Run the CI workflow and resolve any failures, including the minimum Flutter
+   version check.
+3. Commit the release changes and run `dart pub publish --dry-run` from the
+   package root. Review the archive and address warnings.
+4. Confirm package-name availability and the publishing account on pub.dev,
+   then publish only when ready with `dart pub publish`.
 
-## Release gates
-
-1. Run `flutter pub get`, `dart format`, `flutter analyze` and `flutter test`
-   with Flutter 3.41 and your current stable Flutter release; resolve failures.
-2. Generate the example hosts as described in README and build iOS/Android.
-3. Run the device smoke test on both platforms, then test redirects, rapid
-   navigation, same-URL reload races, view removal while loading and app resume.
-4. Reproduce and resolve the user's original UIKit/migration failure in their
-   real app. Record Flutter, Xcode, OS and resolved native dependency versions.
-5. Complete the features required by each production screen before adoption. Remove `publish_to: none` only when intentionally preparing a release.
-
-## Repeat the portable JS check
-
-From the package directory with Node installed:
-
-```sh
-node --test tool/js_smoke_test.cjs
-```
-
-The Flutter tests require a functioning Flutter SDK. The device test additionally
-requires a running iOS simulator/Android emulator or connected device. The
-included CI template compiles native hosts but does not run device tests.
+The package is not published by the validation commands above. A published
+version cannot normally be removed from pub.dev; see the
+[Dart publishing guide](https://dart.dev/tools/pub/publishing).

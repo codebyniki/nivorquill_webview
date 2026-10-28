@@ -1,7 +1,8 @@
 name: nivorquill_webview
 description: A composable Flutter WebView with navigation policies, observable state, JSON scripting, page tools, and explicit lifecycle handling.
-version: 0.1.0-dev.1
-publish_to: none
+version: 0.1.0
+repository: https://github.com/codebyniki/nivorquill_webview
+issue_tracker: https://github.com/codebyniki/nivorquill_webview/issues
 environment:
   sdk: '>=3.11.0 <4.0.0'
   flutter: '>=3.41.0'

@@ -1,34 +1,22 @@
 # Changelog
 
-## Unreleased
+## 0.1.0
 
-- Added HTTP-specific error builders and a widget for trusted HTML error pages.
-- Added a callback for blocked navigation so apps can handle external links.
+First release of Nivorquill WebView for Android and iOS.
 
-- Added a developer API guide and public API documentation for IDE hovers and generated references.
-
-- Added an opt-in error overlay for HTTP 5xx responses with configurable status selection.
-
-- Added opt-in HTTP error, JavaScript console, scroll, JavaScript dialog,
-  HTTP authentication and permission callbacks.
-- Added shared cookie management, reusable navigation and error components,
-  and explicit user-initiated retry for allowed remote URLs.
-- Added documentation for callback, privacy, recovery and platform behavior.
-- Fixed a view initialization notification during Flutter's build phase.
+- Added native WebViews with HTTPS navigation policies, origin allowlists and
+  asynchronous navigation guards.
+- Added observable loading state, navigation events, history, timeouts and
+  customizable loading and error overlays.
+- Added opt-in HTTP error handling and custom Flutter or HTML error pages.
+- Added JSON and Promise-based JavaScript evaluation, CSS injection, text
+  search, page metadata and scroll controls.
+- Added optional HTTP error, JavaScript console, scrolling, dialog,
+  authentication, permission and blocked-navigation callbacks.
+- Added shared cookie management, navigation controls and user-initiated retry.
+- Added view customization for background, zoom, scrollbars and progress.
+- Added an example application, API documentation and tests.
 
 ## 0.1.0-dev.1
 
-- Added optional native background color and zoom configuration, progress
-  indicator and scrollbar styling, relative scrolling and scroll-position reading.
-
-Initial development source release. Not published and not device-validated.
-
-- Native rendering through webview_flutter; no forked UIKit registration code.
-- Exact-origin policies and asynchronous navigation guards with fail-closed timeouts.
-- Observable page state, progress, errors, duration and history availability.
-- JSON-safe synchronous and Promise-based JavaScript evaluation.
-- Navigation invalidation and bounded asynchronous script concurrency.
-- Local HTML, CSS injection, text search, metadata and scrolling.
-- Loading/error overlays, sample app, unit tests, device smoke test and CI template.
-- UIScene migration and integration documentation.
-
+Initial development source snapshot.
