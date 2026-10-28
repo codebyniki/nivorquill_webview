@@ -11,9 +11,14 @@ import 'flutter_engine.dart';
 import 'models.dart';
 import 'scripts.dart';
 
-/// Own one controller per view. Call initialize before displaying the view,
-/// and dispose it after removing that view from the widget tree.
+/// Controls a single WebView and exposes its state and events.
+///
+/// Keep one controller per view and dispose it when the owning screen is removed.
 final class NivorquillController extends ChangeNotifier {
+  /// Creates a controller using the native WebView backend.
+  ///
+  /// [settings] configure the view; [navigationGuard] adds an async navigation
+  /// decision. A supplied [nativeController] must configure its own permission handler.
   factory NivorquillController({
     NivorquillSettings? settings,
     NivorquillNavigationGuard? navigationGuard,
@@ -58,6 +63,7 @@ final class NivorquillController extends ChangeNotifier {
     return controller;
   }
 
+  /// Creates a controller with an injected backend for tests.
   @visibleForTesting
   NivorquillController.withEngine(
     this._engine, {
@@ -66,7 +72,11 @@ final class NivorquillController extends ChangeNotifier {
   }) : settings = settings ?? NivorquillSettings();
 
   final NivorquillEngine _engine;
+
+  /// Configuration applied to this controller’s WebView.
   final NivorquillSettings settings;
+
+  /// Optional additional decision for policy-allowed navigation.
   final NivorquillNavigationGuard? navigationGuard;
   final _events = StreamController<NivorquillEvent>.broadcast();
   NivorquillState _state = const NivorquillState();
@@ -81,12 +91,19 @@ final class NivorquillController extends ChangeNotifier {
   int _metadataRequest = 0;
   int _activeScripts = 0;
 
+  /// The latest page state snapshot; listen to this controller for changes.
   NivorquillState get state => _state;
+
+  /// Broadcast stream of page events; events are not replayed.
   Stream<NivorquillEvent> get events => _events.stream;
+
+  /// Whether initialization completed and this controller is not disposed.
   bool get isInitialized => _initialized && !_disposed;
 
-  /// Escape hatch for platform features. Direct native calls bypass policy
-  /// and lifecycle checks. Do not replace the installed navigation delegate.
+  /// The underlying native WebView controller.
+  ///
+  /// Direct calls can bypass policy and lifecycle checks. Do not replace its
+  /// navigation delegate; Nivorquill uses it for state and policy.
   WebViewController get nativeController {
     _ensureAlive();
     final engine = _engine;
@@ -96,6 +113,7 @@ final class NivorquillController extends ChangeNotifier {
     throw StateError('This test engine has no native controller');
   }
 
+  /// Initializes the backend once and shares the same future across callers.
   Future<void> initialize() {
     _ensureAlive();
     return _initialization ??= _initialize();
@@ -124,16 +142,14 @@ final class NivorquillController extends ChangeNotifier {
             unawaited(_refreshMetadata(_generation));
           },
           failed: _fail,
+          httpError: _httpError,
           navigate: (url, mainFrame) async {
             if (_disposed) {
               return false;
             }
-            // The native callback is not a subresource firewall.
             if (!mainFrame) {
               return true;
             }
-            // WKWebView may ask about its generated blank HTML document.
-            // Remote pages cannot opt into this exception through load().
             if (_localHtmlMode && url == 'about:blank') {
               return true;
             }
@@ -157,8 +173,10 @@ final class NivorquillController extends ChangeNotifier {
     }
   }
 
-  /// Loads an HTTP(S) GET. Headers apply to this request only, not redirects
-  /// or subresources. No automatic retries that might duplicate transactions.
+  /// Starts a policy-allowed GET request.
+  ///
+  /// Completion means the native engine accepted the request, not that the page
+  /// finished. Headers apply to the initial request, not necessarily redirects.
   Future<void> load(Uri uri, {Map<String, String> headers = const {}}) async {
     await initialize();
     final request = ++_request;
@@ -174,8 +192,9 @@ final class NivorquillController extends ChangeNotifier {
     await _load(uri, () => _engine.load(uri, safeHeaders));
   }
 
-  /// Loads trusted application HTML. This bypasses remote-origin rules for
-  /// the initial document; sanitize untrusted HTML and use CSP yourself.
+  /// Loads trusted application HTML with an optional policy-allowed base URL.
+  ///
+  /// The initial document bypasses remote-origin rules.
   Future<void> loadHtml(String html, {Uri? baseUrl}) async {
     await initialize();
     _ensureAlive();
@@ -215,7 +234,7 @@ final class NivorquillController extends ChangeNotifier {
           () => navigationGuard!(uri),
         ).timeout(settings.guardTimeout);
       } catch (_) {
-        allowed = false; // Fail closed if the guard throws or times out.
+        allowed = false;
       }
     }
     if (!allowed && !_disposed) {
@@ -257,8 +276,6 @@ final class NivorquillController extends ChangeNotifier {
       return;
     }
     final uri = Uri.tryParse(url);
-    // Native callbacks do not carry navigation IDs. Ignore clearly stale URLs;
-    // same-URL overlapping navigations still require device regression tests.
     if (_state.uri != null && uri != _state.uri) {
       return;
     }
@@ -313,16 +330,13 @@ final class NivorquillController extends ChangeNotifier {
           canGoForward: results[2]! as bool,
         ),
       );
-    } catch (_) {
-      // Optional metadata failure must not turn a loaded page into an error.
-    }
+    } catch (_) {}
   }
 
   void _fail(NivorquillFailure error) {
     if (_disposed) {
       return;
     }
-    // Ignore a clearly stale native error from a different URL.
     if (error.uri != null &&
         error.uri.toString().isNotEmpty &&
         _state.uri != null &&
@@ -341,6 +355,30 @@ final class NivorquillController extends ChangeNotifier {
     _emit(NivorquillEventKind.failure, failure: error, uri: error.uri);
   }
 
+  void _httpError(HttpResponseError error) {
+    if (_disposed) return;
+    final status = error.response?.statusCode;
+    final uri = error.request?.uri ?? error.response?.uri;
+    if (settings.showHttpErrorPage &&
+        _state.isLoading &&
+        status != null &&
+        (settings.httpErrorStatusCodes?.call(status) ??
+            (status >= 500 && status < 600)) &&
+        (uri == null || uri == _state.uri)) {
+      _fail(
+        NivorquillFailure(
+          'http:$status',
+          'HTTP $status',
+          uri: uri ?? _state.uri,
+        ),
+      );
+    }
+    settings.onHttpError?.call(error);
+  }
+
+  /// Reloads the current remote URL after applying navigation policy.
+  ///
+  /// Use [loadHtml] again for a local HTML document.
   Future<void> reload() async {
     await initialize();
     _ensureAlive();
@@ -361,7 +399,9 @@ final class NivorquillController extends ChangeNotifier {
     await _load(uri, _engine.reload);
   }
 
-  /// Explicitly retry a failed remote GET using its last recorded URL.
+  /// Starts a new GET for the last recorded allowed remote URL.
+  ///
+  /// Custom headers and submitted form data are not preserved.
   Future<void> retry() async {
     final uri = _state.failure?.uri ?? _state.uri;
     if (uri == null || !settings.policy.allows(uri)) {
@@ -373,7 +413,10 @@ final class NivorquillController extends ChangeNotifier {
     await load(uri);
   }
 
+  /// Navigates back and returns whether a history entry was available.
   Future<bool> goBack() => _history(back: true);
+
+  /// Navigates forward and returns whether a history entry was available.
   Future<bool> goForward() => _history(back: false);
 
   Future<bool> _history({required bool back}) async {
@@ -392,7 +435,9 @@ final class NivorquillController extends ChangeNotifier {
     return true;
   }
 
-  /// Evaluates a synchronous JS expression and decodes a JSON-safe result.
+  /// Evaluates a trusted JavaScript expression and returns its JSON value.
+  ///
+  /// The result must be JSON serializable. Use [evaluateAsyncJson] for promises.
   Future<Object?> evaluateJson(String expression) async {
     await initialize();
     _ensureScripts();
@@ -404,8 +449,10 @@ final class NivorquillController extends ChangeNotifier {
     return _decodeEnvelope(result);
   }
 
-  /// Awaits a Promise without exposing a JS-to-native privileged bridge.
-  /// Timeout ends Dart waiting; it cannot cancel JS or network side effects.
+  /// Evaluates a promise-returning expression and returns its JSON value.
+  ///
+  /// A timeout stops waiting, not the page’s work. Navigation invalidates the
+  /// result, and at most 16 async evaluations can run concurrently.
   Future<Object?> evaluateAsyncJson(
     String expression, {
     Duration? timeout,
@@ -467,16 +514,13 @@ final class NivorquillController extends ChangeNotifier {
           await _engine
               .runJavaScript(PageScripts.remove(key))
               .timeout(const Duration(milliseconds: 250));
-        } catch (_) {
-          /* Best-effort release after navigation or native loss. */
-        }
+        } catch (_) {}
       }
     }
   }
 
   static Map<String, Object?> _decodeObject(Object raw) {
     Object? decoded = raw is String ? jsonDecode(raw) : raw;
-    // Some native adapters return a JSON-quoted JS string.
     if (decoded is String) {
       decoded = jsonDecode(decoded);
     }
@@ -497,6 +541,9 @@ final class NivorquillController extends ChangeNotifier {
     );
   }
 
+  /// Inserts or replaces a style element with [css] and the supplied [id].
+  ///
+  /// The page’s content security policy can block the injected style.
   Future<void> injectCss(String css, {String id = 'nivorquill-style'}) async {
     await initialize();
     _ensureScripts();
@@ -505,8 +552,9 @@ final class NivorquillController extends ChangeNotifier {
         .timeout(settings.scriptTimeout);
   }
 
-  /// Uses WebKit/Chromium window.find; searches the rendered page, wraps, and
-  /// selects a match. No total count, PDF search or cross-origin iframe promise.
+  /// Selects the next matching text using the WebView’s `window.find`.
+  ///
+  /// Matches wrap; total counts and PDF or cross-frame search are not guaranteed.
   Future<bool> findText(
     String query, {
     bool backwards = false,
@@ -525,39 +573,41 @@ final class NivorquillController extends ChangeNotifier {
         true;
   }
 
+  /// Returns page title, URL, description, language and scroll metadata.
   Future<Map<String, Object?>> pageMetadata() async =>
       Map<String, Object?>.from(
         (await evaluateJson(PageScripts.metadata))! as Map<String, Object?>,
       );
 
+  /// Scrolls to absolute native WebView coordinates [x] and [y].
   Future<void> scrollTo(int x, int y) async {
     await initialize();
     _ensureAlive();
     await _engine.scrollTo(x, y);
   }
 
-  /// Scroll by a relative offset in the native WebView's coordinate system.
+  /// Scrolls by relative native WebView offsets [x] and [y].
   Future<void> scrollBy(int x, int y) async {
     await initialize();
     _ensureAlive();
     await _engine.scrollBy(x, y);
   }
 
-  /// Returns the current native scroll position.
+  /// Returns the current native WebView scroll position.
   Future<Offset> scrollPosition() async {
     await initialize();
     _ensureAlive();
     return _engine.scrollPosition();
   }
 
-  /// Cache clearing does not reload the page or clear cookies.
+  /// Clears the shared native cache without clearing cookies or reloading.
   Future<void> clearCache() async {
     await initialize();
     _ensureAlive();
     await _engine.clearCache();
   }
 
-  /// Native web storage is shared by default. This is not per-view isolation.
+  /// Clears shared native WebView local storage; cookies are not cleared.
   Future<void> clearLocalStorage() async {
     await initialize();
     _ensureAlive();
@@ -603,6 +653,9 @@ final class NivorquillController extends ChangeNotifier {
     }
   }
 
+  /// Releases controller listeners and event resources.
+  ///
+  /// The controller cannot be used again after disposal.
   @override
   void dispose() {
     if (_disposed) {
@@ -614,7 +667,6 @@ final class NivorquillController extends ChangeNotifier {
     _loadTimer?.cancel();
     _loadWatch?.stop();
     unawaited(_events.close());
-    // webview_flutter owns native view lifetime; it has no controller.dispose.
     super.dispose();
   }
 }

@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'controller.dart';
 
-/// Optional toolbar; action errors are returned to the caller via [onError].
+/// Optional back, forward and reload controls for a controller.
 class NivorquillNavigationBar extends StatelessWidget {
+  /// Creates navigation controls and an optional action error handler.
   const NivorquillNavigationBar({
     super.key,
     required this.controller,
     this.onError,
   });
+
+  /// Controller whose history and reload actions are used.
   final NivorquillController controller;
+
+  /// Receives errors from toolbar actions when provided.
   final void Function(Object error)? onError;
 
   Future<void> _run(Future<void> Function() action) async {
@@ -53,16 +58,23 @@ class NivorquillNavigationBar extends StatelessWidget {
   );
 }
 
-/// Customizable error or offline content with an optional user-initiated retry.
+/// An error or offline panel with an optional user-triggered retry button.
 class NivorquillErrorPanel extends StatelessWidget {
+  /// Creates a panel with a message or custom child and optional retry action.
   const NivorquillErrorPanel({
     super.key,
     this.message = 'Unable to load this page.',
     this.onRetry,
     this.child,
   });
+
+  /// Text shown when [child] is not supplied.
   final String message;
+
+  /// Action called when Retry is pressed; null hides the button.
   final VoidCallback? onRetry;
+
+  /// Custom content displayed instead of [message].
   final Widget? child;
   @override
   Widget build(BuildContext context) => ColoredBox(

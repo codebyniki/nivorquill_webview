@@ -61,7 +61,7 @@ final class FlutterWebEngine implements NivorquillEngine {
     }
     await controller.setNavigationDelegate(
       NavigationDelegate(
-        onHttpError: settings.onHttpError,
+        onHttpError: c.httpError,
         onHttpAuthRequest: settings.onHttpAuth == null
             ? null
             : (request) async {
@@ -90,7 +90,6 @@ final class FlutterWebEngine implements NivorquillEngine {
             ? NavigationDecision.navigate
             : NavigationDecision.prevent,
         onWebResourceError: (error) {
-          // Unknown/subframe errors must not replace a healthy top-level page.
           if (error.isForMainFrame == true) {
             c.failed(
               NivorquillFailure(

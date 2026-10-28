@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a developer API guide and public API documentation for IDE hovers and generated references.
+
+- Added an opt-in error overlay for HTTP 5xx responses with configurable status selection.
+
 - Added opt-in HTTP error, JavaScript console, scroll, JavaScript dialog,
   HTTP authentication and permission callbacks.
 - Added shared cookie management, reusable navigation and error components,

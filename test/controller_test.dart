@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nivorquill_webview/nivorquill_webview.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'fake_engine.dart';
 
 void main() {
@@ -14,6 +15,64 @@ void main() {
     controller = NivorquillController.withEngine(engine);
   });
   tearDown(() => controller.dispose());
+
+  test(
+    'HTTP error overlay is opt-in and ignores errors for other URLs',
+    () async {
+      final uri = Uri.parse('https://example.com/page');
+      HttpResponseError response(int status, Uri? requestUri) =>
+          HttpResponseError(
+            request: requestUri == null
+                ? null
+                : WebResourceRequest(uri: requestUri),
+            response: WebResourceResponse(uri: null, statusCode: status),
+          );
+      await controller.load(uri);
+      engine.callbacks.httpError(response(500, uri));
+      expect(controller.state.phase, NivorquillPhase.loading);
+      controller.dispose();
+      var observed = 0;
+      controller = NivorquillController.withEngine(
+        engine,
+        settings: NivorquillSettings(
+          showHttpErrorPage: true,
+          onHttpError: (_) => observed++,
+        ),
+      );
+      await controller.load(uri);
+      engine.callbacks.httpError(
+        response(500, Uri.parse('https://example.com/image')),
+      );
+      engine.callbacks.httpError(response(404, uri));
+      expect(controller.state.phase, NivorquillPhase.loading);
+      engine.callbacks.httpError(response(500, null));
+      expect(controller.state.failure?.code, 'http:500');
+      expect(observed, 3);
+      engine.callbacks.finished(uri.toString());
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.state.phase, NivorquillPhase.failed);
+    },
+  );
+
+  test('HTTP error status selection is customizable', () async {
+    controller.dispose();
+    controller = NivorquillController.withEngine(
+      engine,
+      settings: NivorquillSettings(
+        showHttpErrorPage: true,
+        httpErrorStatusCodes: (status) => status == 404,
+      ),
+    );
+    final uri = Uri.parse('https://example.com/page');
+    await controller.load(uri);
+    engine.callbacks.httpError(
+      HttpResponseError(
+        request: WebResourceRequest(uri: uri),
+        response: const WebResourceResponse(uri: null, statusCode: 404),
+      ),
+    );
+    expect(controller.state.failure?.code, 'http:404');
+  });
 
   test('retry requires an allowed remote page and starts a new GET', () async {
     await expectLater(controller.retry(), throwsA(isA<NivorquillFailure>()));

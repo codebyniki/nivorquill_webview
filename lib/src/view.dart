@@ -6,9 +6,11 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'controller.dart';
 import 'models.dart';
 
-/// Initializes the controller once, then keeps the native view mounted while
-/// rebuilding overlays. The caller owns and disposes the controller.
+/// Displays a controller’s native WebView with loading and error overlays.
+///
+/// The caller owns and disposes the controller. Give the view bounded dimensions.
 class NivorquillView extends StatefulWidget {
+  /// Creates a WebView with optional progress, loading and error presentation.
   const NivorquillView({
     super.key,
     required this.controller,
@@ -20,13 +22,29 @@ class NivorquillView extends StatefulWidget {
     this.errorBuilder,
     this.gestureRecognizers = const <Factory<OneSequenceGestureRecognizer>>{},
   }) : assert(progressHeight > 0);
+
+  /// Controller that owns the page state and native WebView.
   final NivorquillController controller;
+
+  /// Whether to show the progress indicator while loading.
   final bool showProgress;
+
+  /// Progress indicator color, or null for the theme default.
   final Color? progressColor;
+
+  /// Progress track color, or null for the theme default.
   final Color? progressBackgroundColor;
+
+  /// Progress indicator height; must be greater than zero.
   final double progressHeight;
+
+  /// Builds an optional overlay while the page is loading.
   final Widget Function(BuildContext, NivorquillState)? loadingBuilder;
+
+  /// Builds an overlay when initialization or page loading fails.
   final Widget Function(BuildContext, Object)? errorBuilder;
+
+  /// Gesture recognizers forwarded to the embedded native view.
   final Set<Factory<OneSequenceGestureRecognizer>> gestureRecognizers;
 
   @override

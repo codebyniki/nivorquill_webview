@@ -10,6 +10,9 @@ It provides its own application API while delegating WKWebView / Android WebView
 maintenance to Flutter's native plugins. See [validation](doc/VALIDATION.md)
 before adopting it. Native compilation and device behavior remain unverified.
 
+For a complete guide to controllers, settings, callbacks and widgets, see the
+[API guide](doc/API.md).
+
 ## What is implemented
 
 | Capability | Behavior |
@@ -186,7 +189,7 @@ Native callbacks lack navigation IDs. Clearly stale finish/error URLs are
 filtered and Dart script results use generation checks, but rapid overlapping
 same-URL loads cannot be perfectly distinguished. A timed-out page is marked
 failed; native network activity is not automatically stopped. No automatic
-retry is performed. HTTP 4xx/5xx documents are currently rendered normally;
+retry is performed. HTTP 4xx/5xx documents render normally by default;
 the error overlay handles reported main-frame transport errors and timeouts.
 
 `loadHtml` is for trusted application content and bypasses origin rules for
@@ -220,8 +223,8 @@ lists supported features and current gaps.
 controller initializes; create a new controller to change them. Console logging
 is opt-in and may expose page data. HTTP error callbacks may include resources
 other than the main page; request and response details vary by platform. The
-package does not automatically overlay an HTTP error page: the app can use its
-callback to decide what to show.
+package renders HTTP error pages by default; opt in to the error overlay as
+shown below.
 
 Dialog callbacks return the result expected by the platform. Prompt callbacks
 return a string; the upstream API does not expose a separate cancel result. The
@@ -252,3 +255,39 @@ content. Its retry action is supplied by the app. `controller.retry()` makes a
 new GET request to the last recorded allowed URL; it does not preserve custom
 headers or resubmit a form. Retry is never automatic. For local HTML, call
 `loadHtml` again. Device and network state detection remains the app's choice.
+
+### Show a custom HTTP error page
+
+```dart
+final controller = NivorquillController(
+  settings: NivorquillSettings(
+    showHttpErrorPage: true, // Show the error overlay for HTTP 500–599.
+    // Optional: choose different status codes.
+    // httpErrorStatusCodes: (status) => status == 404 || status >= 500,
+    onHttpError: (error) => debugPrint('HTTP ${error.response?.statusCode}'),
+  ),
+);
+
+NivorquillView(
+  controller: controller,
+  errorBuilder: (context, error) => NivorquillErrorPanel(
+    message: 'The page is temporarily unavailable.',
+    onRetry: () async {
+      try {
+        await controller.retry();
+      } catch (error) {
+        debugPrint('Retry failed: $error');
+      }
+    },
+  ),
+);
+```
+
+This is a best-effort overlay, not response interception. The platform callback
+can arrive after rendering starts, so the server page may briefly appear. A
+callback with a different known URL is ignored for the overlay. Some platform
+callbacks omit the URL and frame information (including current iOS callbacks);
+an error from another frame during loading can therefore be mistaken for the
+main page. Conversely, a main-frame error may not be matched if URL reporting
+lags a redirect. The original `onHttpError` callback still receives all reported
+HTTP errors. Test your navigation and error scenarios on both platforms.

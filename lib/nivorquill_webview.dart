@@ -1,3 +1,4 @@
+/// Widgets, controllers and configuration for Nivorquill WebView.
 library;
 
 export 'src/controller.dart';

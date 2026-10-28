@@ -1,15 +1,19 @@
-/// Rules for navigations surfaced by the native navigation delegate.
+/// Rules for app-initiated and reported main-frame navigations.
 ///
-/// This is not a network firewall: subresources, fetch, iframe traffic and some
-/// native redirects may not be surfaced. Use server CSP for content isolation.
+/// This policy is not a network firewall and does not cover every subresource.
 final class NivorquillPolicy {
+  /// Creates an HTTPS policy with optional exact HTTP(S) origins.
+  ///
+  /// Set [allowHttp] to permit HTTP. Origins cannot contain paths or credentials.
   NivorquillPolicy({Set<Uri>? allowedOrigins, this.allowHttp = false})
     : allowedOrigins = allowedOrigins == null
           ? null
           : Set.unmodifiable(allowedOrigins.map(_validateOrigin));
 
-  /// Null permits any HTTPS origin. An empty set permits no remote origins.
+  /// Allowed origins; null permits any allowed origin, and an empty set denies all.
   final Set<String>? allowedOrigins;
+
+  /// Whether HTTP URLs may pass the policy. Defaults to false.
   final bool allowHttp;
 
   static String _validateOrigin(Uri uri) {
@@ -26,6 +30,7 @@ final class NivorquillPolicy {
     return uri.origin;
   }
 
+  /// Returns whether [uri] satisfies the scheme and origin rules.
   bool allows(Uri uri) {
     if (uri.scheme != 'https' && !(allowHttp && uri.scheme == 'http')) {
       return false;

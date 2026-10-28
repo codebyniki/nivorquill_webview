@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-/// JS source supplied by the app is trusted code; values are JSON encoded.
 abstract final class PageScripts {
   static String json(String expression) =>
       '''
